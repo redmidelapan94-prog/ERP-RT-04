@@ -3,361 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP RT 04 - Digital Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>ERP RT 04 - Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #64748b;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --bg: #f8fafc;
-            --sidebar: #1e293b;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg); display: flex; flex-direction: column; min-height: 100vh; }
-
-        /* Mobile Layout */
-        header { background: var(--sidebar); color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        
-        nav { background: var(--sidebar); color: white; position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 0.8rem 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 100; }
-        nav a { color: #94a3b8; text-decoration: none; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        nav a.active { color: white; }
-        nav i { font-size: 1.2rem; }
-
-        main { padding: 1rem; padding-bottom: 80px; flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; }
-        .section { display: none; animation: fadeIn 0.3s; }
-        .active-section { display: block; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Cards & UI */
-        .card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
-        .grid-charts { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-        @media (min-width: 768px) { .grid-charts { grid-template-columns: 1fr 1fr; } }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        th { background: #f1f5f9; }
-
-        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 6px; }
-        .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; }
-        .badge-lunas { background: #dcfce7; color: #166534; }
-        .badge-belum { background: #fee2e2; color: #991b1b; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .sidebar-active { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .table-container { overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-<header>
-    <h3>ERP RT 04</h3>
-    <div id="sync-status"><i class="fas fa-cloud"></i> Terhubung</div>
-</header>
+<div class="flex flex-col md:flex-row min-h-screen">
+    <div class="md:hidden bg-white p-4 flex justify-between items-center shadow-md">
+        <span class="text-xl font-bold text-blue-600">RT 04 Admin</span>
+        <button onclick="toggleMobileMenu()" class="p-2"><i data-lucide="menu"></i></button>
+    </div>
 
-<main>
-    <section id="dashboard" class="section active-section">
-        <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
-        <div class="grid-charts">
-            <div class="card"><canvas id="barChart"></canvas></div>
-            <div class="card"><canvas id="pieChart"></canvas></div>
-            <div class="card"><canvas id="lineChart"></canvas></div>
+    <nav id="sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-white p-6 border-r space-y-2 fixed md:relative z-50 h-full">
+        <div class="hidden md:flex items-center gap-3 text-2xl font-bold text-blue-600 mb-10">
+            <i data-lucide="building-2"></i> RT 04
         </div>
-    </section>
+        
+        <button onclick="showTab('dashboard')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-xl transition sidebar-active" id="btn-dashboard">
+            <i data-lucide="layout-dashboard" size="20"></i> Dashboard
+        </button>
+        <button onclick="showTab('warga')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-xl transition hover:bg-gray-100" id="btn-warga">
+            <i data-lucide="users" size="20"></i> Data Warga
+        </button>
+        <button onclick="showTab('pembayaran')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-xl transition hover:bg-gray-100" id="btn-pembayaran">
+            <i data-lucide="banknote" size="20"></i> Pembayaran IPL
+        </button>
+        <button onclick="showTab('pengeluaran')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-xl transition hover:bg-gray-100" id="btn-pengeluaran">
+            <i data-lucide="wallet" size="20"></i> Pengeluaran Kas
+        </button>
+        <button onclick="showTab('cek-ipl')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-xl transition hover:bg-gray-100" id="btn-cek-ipl">
+            <i data-lucide="clipboard-check" size="20"></i> Cek Status IPL
+        </button>
+        <button onclick="showTab('komplain')" class="nav-btn w-full flex items-center gap-3 p-3 rounded-xl transition hover:bg-gray-100" id="btn-komplain">
+            <i data-lucide="info" size="20"></i> Komplain
+        </button>
+    </nav>
 
-    <section id="warga" class="section">
-        <div class="card">
-            <h2><i class="fas fa-users"></i> Data Warga</h2>
-            <input type="file" id="importWarga" style="display:none" accept=".json">
-            <button class="btn btn-success" onclick="document.getElementById('importWarga').click()">
-                <i class="fas fa-file-import"></i> Impor JSON
-            </button>
-            <form id="formWarga">
-                <input type="text" id="wNama" placeholder="Nama Lengkap" required>
-                <input type="text" id="wAlamat" placeholder="Alamat (No Rumah)" required>
-                <select id="wStatus">
+    <main class="flex-1 p-4 md:p-10">
+        
+        <section id="dashboard" class="tab-content active">
+            <h1 class="text-2xl font-bold mb-8">Dashboard Management</h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-4">PENGELUARAN VS IPL</h3>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-4">STATUS PEMBAYARAN</h3>
+                    <canvas id="pieChart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-4">WARGA TETAP VS KONTRAK</h3>
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="warga" class="tab-content">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold">Data Warga</h2>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <input type="file" id="importWarga" class="hidden" accept=".xlsx, .xls" onchange="importWargaExcel(event)">
+                    <button onclick="document.getElementById('importWarga').click()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                        <i data-lucide="upload" size="16"></i> Impor Excel
+                    </button>
+                </div>
+            </div>
+            <form id="formWarga" class="bg-white p-6 rounded-2xl shadow-sm border mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="text" id="wNama" placeholder="Nama Lengkap" class="border p-2 rounded-lg" required>
+                <input type="text" id="wAlamat" placeholder="Alamat/No Rumah" class="border p-2 rounded-lg" required>
+                <select id="wStatus" class="border p-2 rounded-lg">
                     <option value="Tetap">Tetap</option>
                     <option value="Kontrak">Kontrak</option>
                 </select>
-                <input type="tel" id="wTelp" placeholder="No Telepon" required>
-                <button type="submit" class="btn btn-primary">Tambah Warga</button>
+                <input type="text" id="wTelp" placeholder="No. Telepon" class="border p-2 rounded-lg" required>
+                <button type="submit" class="bg-blue-600 text-white p-2 rounded-lg md:col-span-4 hover:bg-blue-700 transition">Tambah Warga</button>
             </form>
-            <div style="overflow-x: auto;">
-                <table id="tableWarga">
-                    <thead><tr><th>Nama</th><th>Alamat</th><th>Status</th><th>Aksi</th></tr></thead>
-                    <tbody></tbody>
+            <div class="table-container">
+                <table class="w-full text-left" id="tableWarga">
+                    <thead class="bg-gray-50"><tr class="text-gray-600"><th class="p-4">Nama</th><th class="p-4">Alamat</th><th class="p-4">Status</th><th class="p-4">Telp</th></tr></thead>
+                    <tbody class="divide-y"></tbody>
                 </table>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="pembayaran" class="section">
-        <div class="card">
-            <h2><i class="fas fa-money-bill-wave"></i> Pembayaran IPL</h2>
-            <button class="btn btn-success" onclick="exportData('ipl')"><i class="fas fa-file-export"></i> Ekspor PDF</button>
-            <form id="formIPL">
-                <select id="iplNama" required><option value="">Pilih Warga</option></select>
-                <input type="number" id="iplBiaya" placeholder="Biaya (Rp)" required>
-                <input type="text" id="iplKet" placeholder="Keterangan (Bulan)">
-                <button type="submit" class="btn btn-primary">Catat Pembayaran</button>
+        <section id="pembayaran" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Pembayaran IPL</h2>
+                <div class="flex gap-2">
+                    <button onclick="exportExcel('pembayaran')" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm">Excel</button>
+                    <button onclick="exportPDF('pembayaran')" class="bg-red-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm">PDF</button>
+                </div>
+            </div>
+            <form id="formIPL" class="bg-white p-6 rounded-2xl shadow-sm border mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <input type="text" id="pNama" placeholder="Nama Warga" class="border p-2 rounded-lg" required>
+                <input type="text" id="pAlamat" placeholder="Alamat" class="border p-2 rounded-lg" required>
+                <input type="number" id="pBiaya" placeholder="Biaya (Rp)" class="border p-2 rounded-lg" required>
+                <input type="text" id="pKeterangan" placeholder="Keterangan Bulan" class="border p-2 rounded-lg" required>
+                <button type="submit" class="bg-blue-600 text-white p-2 rounded-lg transition hover:bg-blue-700">Simpan</button>
             </form>
-            <table id="tableIPL">
-                <thead><tr><th>Nama</th><th>Biaya</th><th>Ket</th><th>Aksi</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </section>
+            <div class="table-container">
+                <table class="w-full text-left" id="tableIPL">
+                    <thead class="bg-gray-50"><tr class="text-gray-600"><th class="p-4">Nama</th><th class="p-4">Alamat</th><th class="p-4">Biaya</th><th class="p-4">Bulan</th><th class="p-4">Aksi</th></tr></thead>
+                    <tbody class="divide-y"></tbody>
+                </table>
+            </div>
+        </section>
 
-    <section id="kas" class="section">
-        <div class="card">
-            <h2><i class="fas fa-wallet"></i> Pengeluaran Kas</h2>
-            <button class="btn btn-success" onclick="exportData('kas')"><i class="fas fa-file-export"></i> Ekspor PDF</button>
-            <form id="formKas">
-                <select id="kasJenis">
+        <section id="pengeluaran" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Pengeluaran Kas</h2>
+                <button onclick="exportExcel('pengeluaran')" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm">Ekspor Data</button>
+            </div>
+            <form id="formKas" class="bg-white p-6 rounded-2xl shadow-sm border mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <select id="kJenis" class="border p-2 rounded-lg">
                     <option value="Perbaikan Lampu">Perbaikan Lampu</option>
                     <option value="Perbaikan CCTV">Perbaikan CCTV</option>
                     <option value="Token Listrik">Token Listrik</option>
                 </select>
-                <input type="number" id="kasNominal" placeholder="Nominal" required>
-                <input type="text" id="kasKet" placeholder="Keterangan">
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <input type="number" id="kNominal" placeholder="Nominal Rp" class="border p-2 rounded-lg" required>
+                <input type="text" id="kKet" placeholder="Keterangan detail" class="border p-2 rounded-lg md:col-span-2" required>
+                <button type="submit" class="bg-red-600 text-white p-2 rounded-lg md:col-span-4 hover:bg-red-700">Simpan Pengeluaran</button>
             </form>
-            <table id="tableKas">
-                <thead><tr><th>Jenis</th><th>Nominal</th><th>Ket</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </section>
+            <div class="table-container">
+                <table class="w-full text-left" id="tableKas">
+                    <thead class="bg-gray-50"><tr class="text-gray-600"><th class="p-4">Jenis</th><th class="p-4">Nominal</th><th class="p-4">Keterangan</th></tr></thead>
+                    <tbody class="divide-y"></tbody>
+                </table>
+            </div>
+        </section>
 
-    <section id="cekdata" class="section">
-        <div class="card">
-            <h2><i class="fas fa-search"></i> Cek Status Pembayaran</h2>
-            <table id="tableCek">
-                <thead><tr><th>Nama</th><th>Alamat</th><th>Status IPL</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </section>
+        <section id="cek-ipl" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6">Status Pembayaran Warga</h2>
+            <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div class="p-4 bg-blue-50 text-blue-800 text-sm">
+                    Sistem otomatis mencocokkan nama di Data Warga dengan Tabel Pembayaran.
+                </div>
+                <div class="table-container shadow-none">
+                    <table class="w-full text-left" id="tableCekIPL">
+                        <thead class="bg-gray-50"><tr><th class="p-4">Nama</th><th class="p-4">Alamat</th><th class="p-4">Status</th></tr></thead>
+                        <tbody class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
-    <section id="komplain" class="section">
-        <div class="card">
-            <h2><i class="fas fa-exclamation-circle"></i> Komplain Warga</h2>
-            <form id="formKomplain">
-                <input type="text" id="kNama" placeholder="Nama">
-                <textarea id="kKet" placeholder="Isi Komplain"></textarea>
-                <button type="submit" class="btn btn-danger">Kirim Komplain</button>
+        <section id="komplain" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6">Layanan Komplain</h2>
+            <form id="formKomplain" class="bg-white p-6 rounded-2xl shadow-sm border mb-8 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="cNama" placeholder="Nama Pelapor" class="border p-2 rounded-lg" required>
+                    <input type="text" id="cAlamat" placeholder="No Rumah" class="border p-2 rounded-lg" required>
+                </div>
+                <textarea id="cKet" placeholder="Apa yang ingin dikeluhkan?" class="border p-2 rounded-lg w-full h-24" required></textarea>
+                <button type="submit" class="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700">Kirim Laporan</button>
             </form>
-        </div>
-    </section>
-</main>
+            <div class="table-container">
+                <table class="w-full text-left" id="tableKomplain">
+                    <thead class="bg-gray-50"><tr><th class="p-4">Nama</th><th class="p-4">Alamat</th><th class="p-4">Keluhan</th></tr></thead>
+                    <tbody class="divide-y"></tbody>
+                </table>
+            </div>
+        </section>
 
-<nav>
-    <a href="#" onclick="showSection('dashboard')" class="active"><i class="fas fa-home"></i>Dash</a>
-    <a href="#" onclick="showSection('warga')"><i class="fas fa-users"></i>Warga</a>
-    <a href="#" onclick="showSection('pembayaran')"><i class="fas fa-money-bill"></i>IPL</a>
-    <a href="#" onclick="showSection('kas')"><i class="fas fa-wallet"></i>Kas</a>
-    <a href="#" onclick="showSection('cekdata')"><i class="fas fa-tasks"></i>Cek</a>
-    <a href="#" onclick="showSection('komplain')"><i class="fas fa-comment"></i>Aduan</a>
-</nav>
+    </main>
+</div>
 
 <script>
-    // --- KONFIGURASI JSONBIN.IO ---
-    // Ganti dengan API KEY dan BIN ID Anda jika ingin mencoba di server sendiri
-    const API_KEY = '$2a$10$3D9e6KvZfFl/TJgg7rnmVux97GY.8O2zu39QY7EdiF3pOP4PsiHH6'; // Dummy Key
-    const BIN_ID ='698b9ccad0ea881f40b068a6'; 
-    
-    // Data Storage (Local Backup if JSONbin fails)
-    let db = {
+    // --- CONFIGURATION ---
+    const BIN_ID ='698b9fbbae596e708f20d560'; 
+    const API_KEY = '$2a$10$3D9e6KvZfFl/TJgg7rnmVux97GY.8O2zu39QY7EdiF3pOP4PsiHH6';
+    const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+    let appData = {
         warga: [],
         pembayaran: [],
-        kas: [],
+        pengeluaran: [],
         komplain: []
     };
 
-    // --- INISIALISASI ---
-    document.addEventListener('DOMContentLoaded', () => {
-        loadLocalData();
+    let charts = {};
+
+    async function init() {
+        lucide.createIcons();
+        await loadData();
         renderAll();
-        initCharts();
-    });
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-        document.getElementById(id).classList.add('active-section');
-        document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        if(id === 'dashboard') initCharts();
-        if(id === 'cekdata') renderCekStatus();
     }
 
-    // --- LOGIKA DATA ---
+    // --- DATA ENGINE ---
+    async function loadData() {
+        try {
+            const res = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY } });
+            const data = await res.json();
+            if (data.record) appData = data.record;
+        } catch (e) { console.error("Cloud data error, using local."); }
+    }
+
+    async function saveData() {
+        try {
+            await fetch(API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                body: JSON.stringify(appData)
+            });
+        } catch (e) { alert("Error saving data!"); }
+    }
+
+    // --- UI RENDERING ---
     function renderAll() {
-        // Render Warga Table
-        const tbodyWarga = document.querySelector('#tableWarga tbody');
-        tbodyWarga.innerHTML = '';
-        const iplNamaSelect = document.getElementById('iplNama');
-        iplNamaSelect.innerHTML = '<option value="">Pilih Warga</option>';
-
-        db.warga.forEach((w, index) => {
-            tbodyWarga.innerHTML += `<tr>
-                <td>${w.nama}</td><td>${w.alamat}</td><td>${w.status}</td>
-                <td><button onclick="deleteWarga(${index})" class="btn-danger"><i class="fas fa-trash"></i></button></td>
-            </tr>`;
-            iplNamaSelect.innerHTML += `<option value="${w.nama}">${w.nama} (${w.alamat})</option>`;
-        });
-
-        // Render IPL Table
-        const tbodyIPL = document.querySelector('#tableIPL tbody');
-        tbodyIPL.innerHTML = '';
-        db.pembayaran.forEach((p, index) => {
-            tbodyIPL.innerHTML += `<tr>
-                <td>${p.nama}</td><td>${p.biaya}</td><td>${p.ket}</td>
-                <td><button onclick="deleteIPL(${index})" class="btn-danger">Hapus</button></td>
-            </tr>`;
-        });
-
-        // Render Kas Table
-        const tbodyKas = document.querySelector('#tableKas tbody');
-        tbodyKas.innerHTML = '';
-        db.kas.forEach(k => {
-            tbodyKas.innerHTML += `<tr><td>${k.jenis}</td><td>${k.nominal}</td><td>${k.ket}</td></tr>`;
-        });
+        renderWarga();
+        renderIPL();
+        renderKas();
+        renderCekIPL();
+        renderKomplain();
+        updateCharts();
     }
 
-    function renderCekStatus() {
-        const tbody = document.querySelector('#tableCek tbody');
-        tbody.innerHTML = '';
-        db.warga.forEach(w => {
-            const isLunas = db.pembayaran.find(p => p.nama === w.nama);
-            tbody.innerHTML += `<tr>
-                <td>${w.nama}</td>
-                <td>${w.alamat}</td>
-                <td><span class="badge ${isLunas ? 'badge-lunas' : 'badge-belum'}">
-                    ${isLunas ? 'LUNAS' : 'BELUM BAYAR'}</span>
+    function renderWarga() {
+        const tb = document.querySelector('#tableWarga tbody');
+        tb.innerHTML = appData.warga.map(w => `
+            <tr><td class="p-4 font-semibold">${w.nama}</td><td class="p-4">${w.alamat}</td><td class="p-4">${w.status}</td><td class="p-4">${w.telp}</td></tr>
+        `).join('');
+    }
+
+    function renderIPL() {
+        const tb = document.querySelector('#tableIPL tbody');
+        tb.innerHTML = appData.pembayaran.map((p, i) => `
+            <tr>
+                <td class="p-4">${p.nama}</td><td class="p-4">${p.alamat}</td>
+                <td class="p-4 text-green-600 font-bold">Rp ${Number(p.biaya).toLocaleString()}</td>
+                <td class="p-4">${p.keterangan}</td>
+                <td class="p-4 flex gap-3">
+                    <button onclick="editIPL(${i})" class="text-blue-500 hover:scale-110 transition"><i data-lucide="edit" size="18"></i></button>
+                    <button onclick="deleteData('pembayaran', ${i})" class="text-red-500 hover:scale-110 transition"><i data-lucide="trash-2" size="18"></i></button>
                 </td>
-            </tr>`;
-        });
+            </tr>
+        `).join('');
+        lucide.createIcons();
     }
 
-    // --- FORM HANDLERS ---
+    function renderKas() {
+        const tb = document.querySelector('#tableKas tbody');
+        tb.innerHTML = appData.pengeluaran.map(k => `
+            <tr><td class="p-4">${k.jenis}</td><td class="p-4 text-red-500 font-bold">Rp ${Number(k.nominal).toLocaleString()}</td><td class="p-4 text-sm">${k.ket}</td></tr>
+        `).join('');
+    }
+
+    function renderCekIPL() {
+        const tb = document.querySelector('#tableCekIPL tbody');
+        const lunasNames = appData.pembayaran.map(p => p.nama.trim().toLowerCase());
+        
+        tb.innerHTML = appData.warga.map(w => {
+            const isLunas = lunasNames.includes(w.nama.trim().toLowerCase());
+            return `
+                <tr>
+                    <td class="p-4">${w.nama}</td><td class="p-4">${w.alamat}</td>
+                    <td class="p-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${isLunas ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                            ${isLunas ? 'LUNAS' : 'BELUM BAYAR'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderKomplain() {
+        const tb = document.querySelector('#tableKomplain tbody');
+        tb.innerHTML = appData.komplain.map(k => `
+            <tr><td class="p-4 font-semibold">${k.nama}</td><td class="p-4 text-sm">${k.alamat}</td><td class="p-4 text-gray-600">${k.ket}</td></tr>
+        `).join('');
+    }
+
+    // --- FORMS ---
     document.getElementById('formWarga').onsubmit = (e) => {
         e.preventDefault();
-        db.warga.push({
+        appData.warga.push({
             nama: document.getElementById('wNama').value,
             alamat: document.getElementById('wAlamat').value,
             status: document.getElementById('wStatus').value,
             telp: document.getElementById('wTelp').value
         });
-        saveData();
+        saveAndReload(e);
     };
 
     document.getElementById('formIPL').onsubmit = (e) => {
         e.preventDefault();
-        db.pembayaran.push({
-            nama: document.getElementById('iplNama').value,
-            biaya: document.getElementById('iplBiaya').value,
-            ket: document.getElementById('iplKet').value
+        appData.pembayaran.push({
+            nama: document.getElementById('pNama').value,
+            alamat: document.getElementById('pAlamat').value,
+            biaya: document.getElementById('pBiaya').value,
+            keterangan: document.getElementById('pKeterangan').value
         });
-        saveData();
+        saveAndReload(e);
     };
 
     document.getElementById('formKas').onsubmit = (e) => {
         e.preventDefault();
-        db.kas.push({
-            jenis: document.getElementById('kasJenis').value,
-            nominal: document.getElementById('kasNominal').value,
-            ket: document.getElementById('kasKet').value
+        appData.pengeluaran.push({
+            jenis: document.getElementById('kJenis').value,
+            nominal: document.getElementById('kNominal').value,
+            ket: document.getElementById('kKet').value
         });
-        saveData();
+        saveAndReload(e);
     };
 
-    // --- STORAGE & JSONBIN SIMULATION ---
-    function saveData() {
-        localStorage.setItem('rt04_db', JSON.stringify(db));
-        renderAll();
-        // Simulasi update ke JSON.io
-        console.log("Data Tersimpan ke Cloud (JSONbin.io Simulation)");
+    document.getElementById('formKomplain').onsubmit = (e) => {
+        e.preventDefault();
+        appData.komplain.push({
+            nama: document.getElementById('cNama').value,
+            alamat: document.getElementById('cAlamat').value,
+            ket: document.getElementById('cKet').value
+        });
+        saveAndReload(e);
+    };
+
+    function saveAndReload(e) {
+        saveData(); renderAll(); e.target.reset();
     }
 
-    function loadLocalData() {
-        const data = localStorage.getItem('rt04_db');
-        if(data) db = JSON.parse(data);
+    function deleteData(key, idx) {
+        if(confirm('Hapus data?')) { appData[key].splice(idx, 1); saveData(); renderAll(); }
+    }
+
+    function editIPL(idx) {
+        const val = prompt("Masukkan Nominal Baru:", appData.pembayaran[idx].biaya);
+        if(val) { appData.pembayaran[idx].biaya = val; saveData(); renderAll(); }
+    }
+
+    // --- NAVIGATION ---
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('sidebar-active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('btn-' + id).classList.add('sidebar-active');
+        if(window.innerWidth < 768) toggleMobileMenu();
+    }
+
+    function toggleMobileMenu() {
+        document.getElementById('sidebar').classList.toggle('hidden');
     }
 
     // --- CHARTS ---
-    function initCharts() {
-        const lunas = db.pembayaran.length;
-        const belum = db.warga.length - lunas;
-        const pengeluaran = db.kas.reduce((acc, curr) => acc + parseInt(curr.nominal || 0), 0);
+    function updateCharts() {
+        const ipl = appData.pembayaran.reduce((a, b) => a + Number(b.biaya), 0);
+        const kas = appData.pengeluaran.reduce((a, b) => a + Number(b.nominal), 0);
+        const lunas = appData.pembayaran.length;
+        const belum = Math.max(0, appData.warga.length - lunas);
+        const tetap = appData.warga.filter(w => w.status === 'Tetap').length;
+        const kontrak = appData.warga.filter(w => w.status === 'Kontrak').length;
+
+        const config = (type, labels, data, colors) => ({
+            type, data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: colors }] },
+            options: { responsive: true, plugins: { legend: { display: type !== 'bar' } } }
+        });
+
+        if(charts.bar) charts.bar.destroy();
+        charts.bar = new Chart(document.getElementById('barChart'), config('bar', ['IPL', 'Kas'], [ipl, kas], ['#3b82f6', '#ef4444']));
         
-        // Bar Chart
-        new Chart(document.getElementById('barChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Lunas', 'Pengeluaran (Ribu)'],
-                datasets: [{
-                    label: 'IPL vs Kas',
-                    data: [lunas, pengeluaran/1000],
-                    backgroundColor: ['#22c55e', '#ef4444']
-                }]
-            }
-        });
+        if(charts.pie) charts.pie.destroy();
+        charts.pie = new Chart(document.getElementById('pieChart'), config('pie', ['Lunas', 'Belum'], [lunas, belum], ['#10b981', '#f59e0b']));
 
-        // Pie Chart
-        new Chart(document.getElementById('pieChart'), {
-            type: 'pie',
-            data: {
-                labels: ['Lunas', 'Belum'],
-                datasets: [{
-                    data: [lunas, belum < 0 ? 0 : belum],
-                    backgroundColor: ['#22c55e', '#cbd5e1']
-                }]
-            }
-        });
-
-        // Line Chart
-        const tetap = db.warga.filter(w => w.status === 'Tetap').length;
-        const kontrak = db.warga.filter(w => w.status === 'Kontrak').length;
-        new Chart(document.getElementById('lineChart'), {
-            type: 'line',
-            data: {
-                labels: ['Warga Tetap', 'Warga Kontrak'],
-                datasets: [{
-                    label: 'Demografi',
-                    data: [tetap, kontrak],
-                    borderColor: '#2563eb',
-                    fill: false
-                }]
-            }
-        });
+        if(charts.line) charts.line.destroy();
+        charts.line = new Chart(document.getElementById('lineChart'), config('line', ['Tetap', 'Kontrak'], [tetap, kontrak], ['#6366f1', '#ec4899']));
     }
 
-    // --- EKSPOR & IMPOR ---
-    function exportData(type) {
-        window.print(); // Cara termudah untuk ekspor PDF mobile-friendly
-    }
-
-    document.getElementById('importWarga').onchange = function(e) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const imported = JSON.parse(e.target.result);
-            db.warga = imported;
-            saveData();
-            alert('Data Warga Berhasil diimpor!');
-        };
-        reader.readAsText(e.target.files[0]);
-    };
-
-    function deleteWarga(index) { db.warga.splice(index, 1); saveData(); }
-    function deleteIPL(index) { db.pembayaran.splice(index, 1); saveData(); }
-</script>
-
-</body>
-</html>
+    // --- EXPORT/IMPORT ---
+    function exportExcel(key) {
+        const ws = XLSX.utils.json_to_sheet(appData[key]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, key);
+        XLSX.writeFile(wb, `R
